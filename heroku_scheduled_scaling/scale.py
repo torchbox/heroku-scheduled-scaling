@@ -12,14 +12,13 @@ logger.setLevel(logging.INFO)
 BOOLEAN_TRUE_STRINGS = {"true", "on", "ok", "y", "yes", "1"}
 
 
-def get_scale_for_app(app: App, now: datetime | None = None) -> int | None:
+def get_scale_for_app(app: App) -> int | None:
     """
     Get the expected scale for an app.
 
     `None` signifies "Don't change anything".
     """
-    if now is None:
-        now = datetime.now()
+    now = datetime.now()
 
     config = app.config()
 
@@ -56,8 +55,8 @@ def get_scale_for_app(app: App, now: datetime | None = None) -> int | None:
             return schedule.scale
 
 
-def scale_app(app: App, now: datetime | None = None):
-    scale = get_scale_for_app(app, now)
+def scale_app(app: App):
+    scale = get_scale_for_app(app)
 
     if scale is None:
         return

@@ -2,6 +2,7 @@ from datetime import datetime, time
 from unittest.mock import MagicMock
 
 import pytest
+import time_machine
 
 from heroku_scheduled_scaling.scale import (
     BOOLEAN_TRUE_STRINGS,
@@ -21,8 +22,11 @@ def test_gets_app_scale():
         "SCALING_SCHEDULE": "0900-1700:2;1700-1900:1;1900-0900:0"
     }
 
-    assert get_scale_for_app(app, now=now_time(time(12))) == 2
-    assert get_scale_for_app(app, now=now_time(time(22))) == 0
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) == 2
+
+    with time_machine.travel(now_time(time(22))):
+        assert get_scale_for_app(app) == 0
 
 
 def test_no_scale_coverage():
@@ -30,8 +34,11 @@ def test_no_scale_coverage():
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:2"}
 
-    assert get_scale_for_app(app, now=now_time(time(12))) == 2
-    assert get_scale_for_app(app, now=now_time(time(22))) is None
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) == 2
+
+    with time_machine.travel(now_time(time(22))):
+        assert get_scale_for_app(app) is None
 
 
 @pytest.mark.parametrize("truthy_value", BOOLEAN_TRUE_STRINGS)
@@ -43,8 +50,11 @@ def test_schedule_disabled(truthy_value):
         "SCALING_SCHEDULE_DISABLE": truthy_value,
     }
 
-    assert get_scale_for_app(app, now=now_time(time(12))) is None
-    assert get_scale_for_app(app, now=now_time(time(22))) is None
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) is None
+
+    with time_machine.travel(now_time(time(22))):
+        assert get_scale_for_app(app) is None
 
 
 def test_schedule_temporarily_disabled():
@@ -55,12 +65,14 @@ def test_schedule_temporarily_disabled():
         "SCALING_SCHEDULE_DISABLE": now_time(time(12)).isoformat(),
     }
 
-    assert get_scale_for_app(app, now=now_time(time(10))) is None
+    with time_machine.travel(now_time(time(10))):
+        assert get_scale_for_app(app) is None
 
     app.config.return_value.update.assert_not_called()
 
     # The block has now expired
-    assert get_scale_for_app(app, now=now_time(time(13))) == 2
+    with time_machine.travel(now_time(time(13))):
+        assert get_scale_for_app(app) == 2
 
     app.config.return_value.update.assert_called_with(
         {"SCALING_SCHEDULE_DISABLE": None}
@@ -74,8 +86,11 @@ def test_invalid_schedule():
         "SCALING_SCHEDULE": "Not a schedule"
     }
 
-    assert get_scale_for_app(app, now=now_time(time(12))) is None
-    assert get_scale_for_app(app, now=now_time(time(22))) is None
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) is None
+
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) is None
 
 
 def test_no_app_schedule():
@@ -92,7 +107,8 @@ def test_does_nothing_when_matching_schedule():
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:2"}
     app.process_formation.return_value["web"].quantity = 2
 
-    scale_app(app, now_time(time(12)))
+    with time_machine.travel(now_time(time(12))):
+        scale_app(app)
 
     app.process_formation.return_value["web"].update.assert_not_called()
     app.enable_maintenance_mode.assert_not_called()
@@ -106,7 +122,8 @@ def test_scales_app():
     app.process_formation.return_value["web"].quantity = 1
     app.maintenance = False
 
-    scale_app(app, now_time(time(12)))
+    with time_machine.travel(now_time(time(12))):
+        scale_app(app)
 
     app.process_formation.return_value["web"].update.assert_called_with(
         size=None, quantity=2
@@ -123,7 +140,8 @@ def test_scales_basic_app():
     app.process_formation.return_value["web"].size = "Basic"
     app.maintenance = False
 
-    scale_app(app, now_time(time(12)))
+    with time_machine.travel(now_time(time(12))):
+        scale_app(app)
 
     app.process_formation.return_value["web"].update.assert_called_with(
         size="Standard-1X", quantity=2
@@ -140,7 +158,8 @@ def test_enables_maintenance_mode():
     app.process_formation.return_value["web"].size = "Basic"
     app.maintenance = False
 
-    scale_app(app, now_time(time(12)))
+    with time_machine.travel(now_time(time(12))):
+        scale_app(app)
 
     app.process_formation.return_value["web"].update.assert_called_with(
         size=None, quantity=0
@@ -157,7 +176,8 @@ def test_disables_maintenance_mode():
     app.process_formation.return_value["web"].size = "Basic"
     app.maintenance = True
 
-    scale_app(app, now_time(time(12)))
+    with time_machine.travel(now_time(time(12))):
+        scale_app(app)
 
     app.process_formation.return_value["web"].update.assert_called_with(
         size=None, quantity=1
