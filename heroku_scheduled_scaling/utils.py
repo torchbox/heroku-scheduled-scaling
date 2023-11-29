@@ -21,5 +21,5 @@ def get_heroku_apps():
     return (
         heroku.apps()
         if heroku_teams is None
-        else list(get_apps_for_teams(heroku_teams))
+        else list(get_apps_for_teams(heroku, heroku_teams))
     )
