@@ -22,7 +22,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-heroku_scaling_scheduler = "heroku_scaling_scheduler.__main__:main"
+heroku-scaling-scheduler = "heroku_scaling_scheduler.__main__:main"
 
 [tool.ruff]
 select = ["E", "F", "I", "W", "N", "B", "A", "C4", "T20"]
