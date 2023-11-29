@@ -1,7 +1,13 @@
 from datetime import time
 from unittest.mock import MagicMock
 
-from heroku_scheduled_scaling.scale import get_scale_for_app, scale_app
+import pytest
+
+from heroku_scheduled_scaling.scale import (
+    BOOLEAN_TRUE_STRINGS,
+    get_scale_for_app,
+    scale_app,
+)
 
 
 def test_gets_app_scale():
@@ -21,6 +27,19 @@ def test_no_scale_coverage():
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:2"}
 
     assert get_scale_for_app(app, now_time=time(12)) == 2
+    assert get_scale_for_app(app, now_time=time(22)) is None
+
+
+@pytest.mark.parametrize("truthy_value", BOOLEAN_TRUE_STRINGS)
+def test_schedule_disabled(truthy_value):
+    app = MagicMock()
+
+    app.config.return_value.to_dict.return_value = {
+        "SCALING_SCHEDULE": "0900-1700:2",
+        "SCALING_SCHEDULE_DISABLE": truthy_value,
+    }
+
+    assert get_scale_for_app(app, now_time=time(12)) is None
     assert get_scale_for_app(app, now_time=time(22)) is None
 
 

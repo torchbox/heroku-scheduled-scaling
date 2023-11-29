@@ -21,6 +21,8 @@ poetry run heroku-scheduled-scaling
 
 ## Usage
 
+### Schedule
+
 The schedule is read from a `$SCALING_SCHEDULE` environment variable configured in each application.
 
 The schedule format is a simple, human-readable format, which notes time ranges alongside dyno counts. If there are gaps in the schedule, no changes will be made. If parts of the schedule overlap, the first matching rule will be used.
@@ -34,3 +36,7 @@ This means:
 - Between 7pm and 9am, no dynos will be running (and maintenance mode will be enabled)
 
 Times are based on the time of the server (Heroku's use UTC).
+
+### Temporarily disable scaling
+
+To disable scaling, set `$SCALING_SCHEDULE_DISABLE` to a true-looking value.

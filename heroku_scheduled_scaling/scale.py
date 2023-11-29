@@ -9,8 +9,15 @@ logging.basicConfig()
 logger = logging.getLogger("heroku_scheduled_scaling")
 logger.setLevel(logging.INFO)
 
+BOOLEAN_TRUE_STRINGS = {"true", "on", "ok", "y", "yes", "1"}
+
 
 def get_scale_for_app(app: App, now_time: time | None = None) -> int | None:
+    """
+    Get the expected scale for an app.
+
+    `None` signifies "Don't change anything".
+    """
     if now_time is None:
         now_time = datetime.now().time()
 
@@ -18,6 +25,10 @@ def get_scale_for_app(app: App, now_time: time | None = None) -> int | None:
 
     if not (scaling_schedule := config.get("SCALING_SCHEDULE")):
         # No schedule
+        return
+
+    if config.get("SCALING_SCHEDULE_DISABLE", "").lower() in BOOLEAN_TRUE_STRINGS:
+        # Scheduling temporarily disabled - don't do anything
         return
 
     for schedule in parse_schedule(scaling_schedule):
