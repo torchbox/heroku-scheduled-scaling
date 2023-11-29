@@ -1,6 +1,7 @@
+import concurrent.futures
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, time
+from traceback import print_exception
 
 from heroku3.models.app import App
 
@@ -68,10 +69,16 @@ def main():
         get_heroku_client()._session.adapters["https://"]._pool_connections
     )
 
-    with ThreadPoolExecutor(max_workers=requests_pool_size) as executor:
-        # `map` is the wrong interface here, but it nicely handles exceptions for us
-        for _ in executor.map(scale_app, apps):
-            pass
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=requests_pool_size
+    ) as executor:
+        futures = []
+        for app in apps:
+            futures.append(executor.submit(scale_app, app))
+
+        for future in concurrent.futures.as_completed(futures):
+            if exception := future.exception():
+                print_exception(exception)
 
 
 if __name__ == "__main__":
