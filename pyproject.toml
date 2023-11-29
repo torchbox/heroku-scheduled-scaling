@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "heroku-scaling-scheduler"
+name = "heroku-scheduled-scaling"
 version = "0.0.0"
 description = ""
 authors = []
@@ -22,7 +22,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-heroku-scaling-scheduler = "heroku_scaling_scheduler.__main__:main"
+heroku-scheduled-scaling = "heroku_scheduled_scaling.__main__:main"
 
 [tool.ruff]
 select = ["E", "F", "I", "W", "N", "B", "A", "C4", "T20"]

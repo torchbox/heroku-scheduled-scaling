@@ -6,7 +6,7 @@ from heroku3.models.app import App
 from .schedule import parse_schedule
 
 logging.basicConfig()
-logger = logging.getLogger("heroku_scaling_scheduler")
+logger = logging.getLogger("heroku_scheduled_scaling")
 logger.setLevel(logging.INFO)
 
 

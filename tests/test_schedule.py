@@ -3,7 +3,7 @@ from datetime import time
 
 from hypothesis import given, strategies
 
-from heroku_scaling_scheduler.schedule import Schedule, parse_schedule
+from heroku_scheduled_scaling.schedule import Schedule, parse_schedule
 
 
 def test_parses_schedule():

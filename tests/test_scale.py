@@ -1,7 +1,7 @@
 from datetime import time
 from unittest.mock import MagicMock
 
-from heroku_scaling_scheduler.scale import get_scale_for_app, scale_app
+from heroku_scheduled_scaling.scale import get_scale_for_app, scale_app
 
 
 def test_gets_app_scale():
