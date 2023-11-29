@@ -38,7 +38,9 @@ def scale_app(app: App, now_time: time | None = None):
 
     # Basic apps don't support multiple dynos
     if scale > 1 and web_formation.size == "Basic":
-        logger.warning("Scaling Basic app to Standard-1X to meet schedule.")
+        logger.warning(
+            "Scaling %s from Basic to Standard-1X to meet schedule.", app.name
+        )
         new_size = "Standard-1X"
     else:
         new_size = None
