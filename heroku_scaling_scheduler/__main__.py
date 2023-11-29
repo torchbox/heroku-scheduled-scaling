@@ -1,8 +1,10 @@
 import concurrent.futures
 import logging
+import os
 from datetime import datetime, time
 from traceback import print_exception
 
+import sentry_sdk
 from heroku3.models.app import App
 
 from .schedule import parse_schedule
@@ -63,6 +65,9 @@ def scale_app(app: App):
 
 
 def main():
+    if sentry_dsn := os.environ.get("SENTRY_DSN"):
+        sentry_sdk.init(sentry_dsn)
+
     apps = get_heroku_apps()
 
     requests_pool_size = (
@@ -78,6 +83,7 @@ def main():
 
         for future in concurrent.futures.as_completed(futures):
             if exception := future.exception():
+                sentry_sdk.capture_exception(exception)
                 print_exception(exception)
 
 

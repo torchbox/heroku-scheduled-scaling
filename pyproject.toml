@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 heroku3 = "^5.2.1"
+sentry-sdk = "^1.37.1"
 
 
 [tool.poetry.group.dev.dependencies]
