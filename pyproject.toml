@@ -7,6 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+heroku3 = "^5.2.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -18,6 +19,9 @@ hypothesis = "^6.91.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+heroku_scaling_scheduler = "heroku_scaling_scheduler.__main__:main"
 
 [tool.ruff]
 select = ["E", "F", "I", "W", "N", "B", "A", "C4", "T20"]
