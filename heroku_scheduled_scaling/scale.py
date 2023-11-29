@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, time
+from datetime import datetime
 
 from heroku3.models.app import App
 
@@ -12,32 +12,52 @@ logger.setLevel(logging.INFO)
 BOOLEAN_TRUE_STRINGS = {"true", "on", "ok", "y", "yes", "1"}
 
 
-def get_scale_for_app(app: App, now_time: time | None = None) -> int | None:
+def get_scale_for_app(app: App, now: datetime | None = None) -> int | None:
     """
     Get the expected scale for an app.
 
     `None` signifies "Don't change anything".
     """
-    if now_time is None:
-        now_time = datetime.now().time()
+    if now is None:
+        now = datetime.now()
 
-    config = app.config().to_dict()
+    config = app.config()
 
-    if not (scaling_schedule := config.get("SCALING_SCHEDULE")):
+    # Also grab as dict, as `ConfigVars` doesn't implement `.get`
+    config_dict = config.to_dict()
+
+    if not (scaling_schedule := config_dict.get("SCALING_SCHEDULE")):
         # No schedule
         return
 
-    if config.get("SCALING_SCHEDULE_DISABLE", "").lower() in BOOLEAN_TRUE_STRINGS:
-        # Scheduling temporarily disabled - don't do anything
-        return
+    scaling_disabled = config_dict.get("SCALING_SCHEDULE_DISABLE", "")
+    if scaling_disabled:
+        if scaling_disabled.lower() in BOOLEAN_TRUE_STRINGS:
+            # Scheduling temporarily disabled - don't do anything
+            return
 
+        try:
+            disabled_until_date = datetime.fromisoformat(scaling_disabled)
+        except ValueError:
+            logger.exception("Unable to parse $SCALING_SCHEDULE_DISABLE")
+            return  # err on the side of caution - do nothing.
+
+        if disabled_until_date > now:
+            # Still temporarily disabled
+            return
+
+        if disabled_until_date <= now:
+            # Unset the expired schedule
+            config.update({"SCALING_SCHEDULE_DISABLE": None})
+
+    now_time = now.time()
     for schedule in parse_schedule(scaling_schedule):
         if schedule.covers(now_time):
             return schedule.scale
 
 
-def scale_app(app: App, now_time: time | None = None):
-    scale = get_scale_for_app(app, now_time)
+def scale_app(app: App, now: datetime | None = None):
+    scale = get_scale_for_app(app, now)
 
     if scale is None:
         return

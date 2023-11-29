@@ -40,3 +40,5 @@ Times are based on the time of the server (Heroku's use UTC).
 ### Temporarily disable scaling
 
 To disable scaling, set `$SCALING_SCHEDULE_DISABLE` to a true-looking value.
+
+Alternatively, it can be set to an ISO-8601 timestamp (eg `2023-11-29T16:15:14+00:00`). Up until this time, no scheduling changes will be made. Afterwards, the value will be automatically removed scheduling will continue. This can be useful as part of other automations.
