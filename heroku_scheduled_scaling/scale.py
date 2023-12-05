@@ -12,12 +12,25 @@ logger.setLevel(logging.INFO)
 BOOLEAN_TRUE_STRINGS = {"true", "on", "ok", "y", "yes", "1"}
 
 
-def get_scale_for_app(app: App) -> int | None:
+def get_schedule_for_app(app_config: dict, process: str) -> str | None:
+    if scaling_schedule := app_config.get(f"SCALING_SCHEDULE_{process.upper()}"):
+        return scaling_schedule
+
+    if scaling_schedule := app_config.get("SCALING_SCHEDULE"):
+        return scaling_schedule
+
+    return None
+
+
+def get_scale_for_app(app: App, process: str = "web") -> int | None:
     """
     Get the expected scale for an app.
 
     `None` signifies "Don't change anything".
     """
+    if process == "release":
+        return None
+
     now = datetime.now()
 
     config = app.config()
@@ -25,7 +38,7 @@ def get_scale_for_app(app: App) -> int | None:
     # Also grab as dict, as `ConfigVars` doesn't implement `.get`
     config_dict = config.to_dict()
 
-    if not (scaling_schedule := config_dict.get("SCALING_SCHEDULE")):
+    if not (scaling_schedule := get_schedule_for_app(config_dict, process)):
         # No schedule
         return
 
@@ -56,36 +69,36 @@ def get_scale_for_app(app: App) -> int | None:
 
 
 def scale_app(app: App):
-    scale = get_scale_for_app(app)
+    formations = app.process_formation()
 
-    if scale is None:
+    process_scales = {
+        formation.type: scale
+        for formation in formations
+        if (scale := get_scale_for_app(app, formation.type)) is not None
+    }
+
+    if not process_scales:
         return
 
-    web_formation = app.process_formation()["web"]
-    if web_formation.quantity == scale:
-        logger.info("App %s is already at correct scale: %d", app.name, scale)
-        return
+    for process, scale in process_scales.items():
+        if formations[process].quantity != scale:
+            logger.info(
+                "Scaling app %s (%s) to %d dynos (from %d)",
+                app.name,
+                process,
+                scale,
+                formations[process].quantity,
+            )
 
-    # Basic apps don't support multiple dynos
-    if scale > 1 and web_formation.size == "Basic":
-        logger.warning(
-            "Scaling %s from Basic to Standard-1X to meet schedule.", app.name
-        )
-        new_size = "Standard-1X"
-    else:
-        new_size = None
+    app.batch_scale_formation_processes(process_scales)
 
-    logger.info(
-        "Scaling app %s to %d dynos (from %d)", app.name, scale, web_formation.quantity
-    )
-    web_formation.update(size=new_size, quantity=scale)
-
-    # For a better experience, enable maintenance mode for apps scaled to 0
-    if scale == 0 and not app.maintenance:
-        logger.info("Enabling maintenance mode for %s", app.name)
-        app.enable_maintenance_mode()
-    elif scale and app.maintenance:
-        # NOTE: This can result in maintenance mode being disabled unexpectedly, but
-        # this will only happen on scaling boundaries.
-        logger.info("Disabling maintenance mode for %s", app.name)
-        app.disable_maintenance_mode()
+    if (web_scale := process_scales.get("web")) is not None:
+        # For a better experience, enable maintenance mode for apps scaled to 0
+        if web_scale == 0 and not app.maintenance:
+            logger.info("Enabling maintenance mode for %s", app.name)
+            app.enable_maintenance_mode()
+        elif web_scale and app.maintenance:
+            # NOTE: This can result in maintenance mode being disabled unexpectedly, but
+            # this will only happen on scaling boundaries.
+            logger.info("Disabling maintenance mode for %s", app.name)
+            app.disable_maintenance_mode()

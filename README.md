@@ -37,6 +37,10 @@ This means:
 
 Times are based on the time of the server (Heroku's use UTC).
 
+### Scaling processes separately
+
+By default, `SCALING_SCHEDULE` will scale all processes together. To scale a specific process, define its own schedule (eg `$SCALING_SCHEDULE_WEB`). If a process doesn't have a specific schedule, the global `$SCALING_SCHEDULE` is used. If that is not defined, no changes are made (this allows scaling a `worker` process without affecting `web`).
+
 ### Temporarily disable scaling
 
 To disable scaling, set `$SCALING_SCHEDULE_DISABLE` to a true-looking value.

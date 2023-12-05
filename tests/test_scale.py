@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import time_machine
+from heroku3.structures import KeyedListResource
 
 from heroku_scheduled_scaling.scale import (
     BOOLEAN_TRUE_STRINGS,
@@ -27,6 +28,34 @@ def test_gets_app_scale():
 
     with time_machine.travel(now_time(time(22))):
         assert get_scale_for_app(app) == 0
+
+
+def test_gets_app_scale_for_process():
+    app = MagicMock()
+
+    app.config.return_value.to_dict.return_value = {
+        "SCALING_SCHEDULE_WEB": "0900-1700:2;1700-1900:1;1900-0900:0",
+        "SCALING_SCHEDULE_WORKER": "0000-2359:3",
+    }
+
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) == 2
+        assert get_scale_for_app(app, "web") == 2
+        assert get_scale_for_app(app, "worker") == 3
+
+
+def test_gets_app_scale_for_specific_process():
+    app = MagicMock()
+
+    app.config.return_value.to_dict.return_value = {
+        "SCALING_SCHEDULE": "0900-1700:2;1700-1900:1;1900-0900:0",
+        "SCALING_SCHEDULE_WORKER": "0000-2359:3",
+    }
+
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) == 2
+        assert get_scale_for_app(app, "web") == 2
+        assert get_scale_for_app(app, "worker") == 3
 
 
 def test_no_scale_coverage():
@@ -119,33 +148,19 @@ def test_scales_app():
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:2"}
-    app.process_formation.return_value["web"].quantity = 1
     app.maintenance = False
+
+    formation = MagicMock()
+    formation.type = "web"
+    formation._ids = ["web"]
+    formation.quantity = 1
+
+    app.process_formation.return_value = KeyedListResource([formation])
 
     with time_machine.travel(now_time(time(12))):
         scale_app(app)
 
-    app.process_formation.return_value["web"].update.assert_called_with(
-        size=None, quantity=2
-    )
-    app.enable_maintenance_mode.assert_not_called()
-    app.disable_maintenance_mode.assert_not_called()
-
-
-def test_scales_basic_app():
-    app = MagicMock()
-
-    app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:2"}
-    app.process_formation.return_value["web"].quantity = 1
-    app.process_formation.return_value["web"].size = "Basic"
-    app.maintenance = False
-
-    with time_machine.travel(now_time(time(12))):
-        scale_app(app)
-
-    app.process_formation.return_value["web"].update.assert_called_with(
-        size="Standard-1X", quantity=2
-    )
+    app.batch_scale_formation_processes.assert_called_with({"web": 2})
     app.enable_maintenance_mode.assert_not_called()
     app.disable_maintenance_mode.assert_not_called()
 
@@ -154,16 +169,19 @@ def test_enables_maintenance_mode():
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:0"}
-    app.process_formation.return_value["web"].quantity = 1
-    app.process_formation.return_value["web"].size = "Basic"
     app.maintenance = False
+
+    formation = MagicMock()
+    formation.type = "web"
+    formation._ids = ["web"]
+    formation.quantity = 1
+
+    app.process_formation.return_value = KeyedListResource([formation])
 
     with time_machine.travel(now_time(time(12))):
         scale_app(app)
 
-    app.process_formation.return_value["web"].update.assert_called_with(
-        size=None, quantity=0
-    )
+    app.batch_scale_formation_processes.assert_called_with({"web": 0})
     app.enable_maintenance_mode.assert_called()
     app.disable_maintenance_mode.assert_not_called()
 
@@ -172,15 +190,19 @@ def test_disables_maintenance_mode():
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:1"}
-    app.process_formation.return_value["web"].quantity = 0
-    app.process_formation.return_value["web"].size = "Basic"
     app.maintenance = True
+
+    formation = MagicMock()
+    formation.type = "web"
+    formation._ids = ["web"]
+    formation.quantity = 0
+
+    app.process_formation.return_value = KeyedListResource([formation])
 
     with time_machine.travel(now_time(time(12))):
         scale_app(app)
 
-    app.process_formation.return_value["web"].update.assert_called_with(
-        size=None, quantity=1
-    )
+    app.batch_scale_formation_processes.assert_called_with({"web": 1})
+
     app.enable_maintenance_mode.assert_not_called()
     app.disable_maintenance_mode.assert_called()
