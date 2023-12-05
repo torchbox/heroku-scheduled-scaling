@@ -12,11 +12,11 @@ from heroku_scheduled_scaling.scale import (
 )
 
 
-def now_time(time_component: time):
+def now_time(time_component: time) -> datetime:
     return datetime.combine(datetime.now().date(), time_component)
 
 
-def test_gets_app_scale():
+def test_gets_app_scale() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {
@@ -30,7 +30,7 @@ def test_gets_app_scale():
         assert get_scale_for_app(app) == 0
 
 
-def test_gets_app_scale_for_process():
+def test_gets_app_scale_for_process() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {
@@ -44,7 +44,7 @@ def test_gets_app_scale_for_process():
         assert get_scale_for_app(app, "worker") == 3
 
 
-def test_gets_app_scale_for_specific_process():
+def test_gets_app_scale_for_specific_process() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {
@@ -58,7 +58,7 @@ def test_gets_app_scale_for_specific_process():
         assert get_scale_for_app(app, "worker") == 3
 
 
-def test_no_scale_coverage():
+def test_no_scale_coverage() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:2"}
@@ -71,7 +71,7 @@ def test_no_scale_coverage():
 
 
 @pytest.mark.parametrize("truthy_value", BOOLEAN_TRUE_STRINGS)
-def test_schedule_disabled(truthy_value):
+def test_schedule_disabled(truthy_value: str) -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {
@@ -86,7 +86,7 @@ def test_schedule_disabled(truthy_value):
         assert get_scale_for_app(app) is None
 
 
-def test_schedule_temporarily_disabled():
+def test_schedule_temporarily_disabled() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {
@@ -108,7 +108,7 @@ def test_schedule_temporarily_disabled():
     )
 
 
-def test_invalid_schedule():
+def test_invalid_schedule() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {
@@ -122,7 +122,7 @@ def test_invalid_schedule():
         assert get_scale_for_app(app) is None
 
 
-def test_no_app_schedule():
+def test_no_app_schedule() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {}
@@ -130,7 +130,7 @@ def test_no_app_schedule():
     assert get_scale_for_app(app) is None
 
 
-def test_does_nothing_when_matching_schedule():
+def test_does_nothing_when_matching_schedule() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:2"}
@@ -144,7 +144,7 @@ def test_does_nothing_when_matching_schedule():
     app.disable_maintenance_mode.assert_not_called()
 
 
-def test_scales_app():
+def test_scales_app() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:2"}
@@ -165,7 +165,7 @@ def test_scales_app():
     app.disable_maintenance_mode.assert_not_called()
 
 
-def test_enables_maintenance_mode():
+def test_enables_maintenance_mode() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:0"}
@@ -186,7 +186,7 @@ def test_enables_maintenance_mode():
     app.disable_maintenance_mode.assert_not_called()
 
 
-def test_disables_maintenance_mode():
+def test_disables_maintenance_mode() -> None:
     app = MagicMock()
 
     app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "0900-1700:1"}

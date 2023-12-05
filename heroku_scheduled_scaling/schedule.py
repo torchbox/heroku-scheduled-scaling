@@ -18,7 +18,7 @@ class Schedule:
         else:  # crosses midnight
             return current_time >= self.start_time or current_time <= self.end_time
 
-    def serialize(self):
+    def serialize(self) -> str:
         return f"{self.start_time.strftime('%H%M')}-{self.end_time.strftime('%H%M')}:{self.scale}"
 
 

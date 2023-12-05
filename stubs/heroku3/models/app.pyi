@@ -1,0 +1,16 @@
+from typing import Any
+
+from ..structures import KeyedListResource
+from . import Team
+from .configvars import ConfigVars
+
+class App:
+    name: str
+    team: Team
+    maintenance: bool
+
+    def process_formation(self) -> KeyedListResource: ...
+    def batch_scale_formation_processes(self, updates: dict[str, int]) -> None: ...
+    def enable_maintenance_mode(self) -> Any: ...
+    def disable_maintenance_mode(self) -> Any: ...
+    def config(self) -> ConfigVars: ...

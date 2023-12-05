@@ -8,7 +8,7 @@ from .scale import scale_app
 from .utils import get_heroku_apps, get_heroku_client
 
 
-def main():
+def main() -> None:
     if sentry_dsn := os.environ.get("SENTRY_DSN"):
         sentry_sdk.init(sentry_dsn)
 

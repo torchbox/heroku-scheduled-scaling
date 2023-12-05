@@ -6,7 +6,7 @@ from hypothesis import given, strategies
 from heroku_scheduled_scaling.schedule import Schedule, parse_schedule
 
 
-def test_parses_schedule():
+def test_parses_schedule() -> None:
     schedules = parse_schedule("0900-1700:2;1700-1900:1;1900-0900:0")
 
     assert len(schedules) == 3
@@ -24,7 +24,7 @@ def test_parses_schedule():
     assert schedules[2].scale == 0
 
 
-def test_parses_single_schedule():
+def test_parses_single_schedule() -> None:
     schedules = parse_schedule("0900-1700:3")
 
     assert len(schedules) == 1
@@ -36,7 +36,7 @@ def test_parses_single_schedule():
     assert schedules[0].serialize() == "0900-1700:3"
 
 
-def test_parses_all_day_schedule():
+def test_parses_all_day_schedule() -> None:
     schedules = parse_schedule("0000-2359:3")
 
     assert len(schedules) == 1
@@ -46,18 +46,18 @@ def test_parses_all_day_schedule():
     assert schedules[0].scale == 3
 
 
-def test_negative_scale():
+def test_negative_scale() -> None:
     assert len(parse_schedule("0000-2359:-3")) == 0
 
 
-def test_schedule_covers_time():
+def test_schedule_covers_time() -> None:
     schedule = Schedule(time(9), time(17), 1)
 
     assert schedule.covers(time(9, 1))
     assert schedule.covers(time(16, 59))
 
 
-def test_covers_crossing_midnight():
+def test_covers_crossing_midnight() -> None:
     schedule = Schedule(time(20), time(8), 1)
 
     assert schedule.covers(time.max)
@@ -67,10 +67,10 @@ def test_covers_crossing_midnight():
 
 
 @given(strategies.text(min_size=3, max_size=15))
-def test_invalid_schedule(schedule_candidate):
+def test_invalid_schedule(schedule_candidate: str) -> None:
     parse_schedule(schedule_candidate)
 
 
 @given(strategies.text(alphabet=string.digits))
-def test_invalid_time(strategy_time: str):
+def test_invalid_time(strategy_time: str) -> None:
     parse_schedule(f"{strategy_time}-2359:1")

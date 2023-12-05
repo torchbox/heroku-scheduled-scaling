@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 BOOLEAN_TRUE_STRINGS = {"true", "on", "ok", "y", "yes", "1"}
 
 
-def get_schedule_for_app(app_config: dict, process: str) -> str | None:
+def get_schedule_for_app(app_config: dict[str, str], process: str) -> str | None:
     if scaling_schedule := app_config.get(f"SCALING_SCHEDULE_{process.upper()}"):
         return scaling_schedule
 
@@ -40,23 +40,23 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
 
     if not (scaling_schedule := get_schedule_for_app(config_dict, process)):
         # No schedule
-        return
+        return None
 
     scaling_disabled = config_dict.get("SCALING_SCHEDULE_DISABLE", "")
     if scaling_disabled:
         if scaling_disabled.lower() in BOOLEAN_TRUE_STRINGS:
             # Scheduling temporarily disabled - don't do anything
-            return
+            return None
 
         try:
             disabled_until_date = datetime.fromisoformat(scaling_disabled)
         except ValueError:
             logger.exception("Unable to parse $SCALING_SCHEDULE_DISABLE")
-            return  # err on the side of caution - do nothing.
+            return None  # err on the side of caution - do nothing.
 
         if disabled_until_date > now:
             # Still temporarily disabled
-            return
+            return None
 
         if disabled_until_date <= now:
             # Unset the expired schedule
@@ -67,8 +67,10 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
         if schedule.covers(now_time):
             return schedule.scale
 
+    return None
 
-def scale_app(app: App):
+
+def scale_app(app: App) -> None:
     formations = app.process_formation()
 
     process_scales = {
