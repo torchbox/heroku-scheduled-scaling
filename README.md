@@ -1,6 +1,8 @@
 # Heroku Scheduled Scaling
 
-Scale Heroku `web` dynos based on a schedule.
+[![Main](https://github.com/torchbox/heroku-scheduled-scaling/actions/workflows/ci.yml/badge.svg)](https://github.com/torchbox/heroku-scheduled-scaling/actions/workflows/ci.yml)
+
+Scale Heroku dynos based on a schedule.
 
 ## Deployment
 
@@ -18,6 +20,8 @@ poetry run heroku-scheduled-scaling
 - `HEROKU_API_KEY`: Heroku API key - used for authentication. The corresponding user must have the ability to scale and read environment variables for apps.
 - `HEROKU_TEAMS`: Comma-separated list of Heroku teams to operate on. All others are ignored, regardless of whether they have a schedule.
 - `SENTRY_DSN` (optional): Sentry integration (for error reporting)
+
+All other configuration is handled on the app you wish to scale.
 
 ## Usage
 
