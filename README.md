@@ -20,6 +20,7 @@ poetry run heroku-scheduled-scaling
 - `HEROKU_API_KEY`: Heroku API key - used for authentication. The corresponding user must have the ability to scale and read environment variables for apps.
 - `HEROKU_TEAMS`: Comma-separated list of Heroku teams to operate on. All others are ignored, regardless of whether they have a schedule.
 - `SENTRY_DSN` (optional): Sentry integration (for error reporting)
+- `SCHEDULE_TEMPLATE_*` (optional): Pre-defined scaling templates (see [below](#scaling-templates)).
 
 All other configuration is handled on the app you wish to scale.
 
@@ -50,3 +51,19 @@ By default, `SCALING_SCHEDULE` will scale all processes together. To scale a spe
 To disable scaling, set `$SCALING_SCHEDULE_DISABLE` to a true-looking value.
 
 Alternatively, it can be set to an ISO-8601 timestamp (eg `2023-11-29T16:15:14+00:00`). Up until this time, no scheduling changes will be made. Afterwards, the value will be automatically removed scheduling will continue. This can be useful as part of other automations.
+
+### Scaling templates
+
+It's often necessary to define a single scaling schedule, and reuse it between apps. This is possible with templates.
+
+For example, define on `heroku-scheduled-scaling`:
+
+```
+SCHEDULE_TEMPLATE_OFFICE_HOURS=0900-1700:2;1700-1900:1;1900-0900:0
+```
+
+And then reuse it on the given app:
+
+```
+SCALING_SCHEDULE=OFFICE_HOURS
+```

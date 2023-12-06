@@ -1,4 +1,5 @@
 from datetime import datetime, time
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -128,6 +129,39 @@ def test_no_app_schedule() -> None:
     app.config.return_value.to_dict.return_value = {}
 
     assert get_scale_for_app(app) is None
+
+
+def test_gets_app_scale_template(monkeypatch: Any) -> None:
+    monkeypatch.setenv(
+        "SCHEDULE_TEMPLATE_WORKING_HOURS", "0900-1700:2;1700-1900:1;1900-0900:0"
+    )
+
+    app = MagicMock()
+
+    app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "WORKING_HOURS"}
+
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) == 2
+
+    with time_machine.travel(now_time(time(22))):
+        assert get_scale_for_app(app) == 0
+
+
+def test_gets_app_scale_template_recursive(monkeypatch: Any) -> None:
+    monkeypatch.setenv(
+        "SCHEDULE_TEMPLATE_OFFICE_HOURS", "0900-1700:2;1700-1900:1;1900-0900:0"
+    )
+    monkeypatch.setenv("SCHEDULE_TEMPLATE_WORKING_HOURS", "OFFICE_HOURS")
+
+    app = MagicMock()
+
+    app.config.return_value.to_dict.return_value = {"SCALING_SCHEDULE": "WORKING_HOURS"}
+
+    with time_machine.travel(now_time(time(12))):
+        assert get_scale_for_app(app) == 2
+
+    with time_machine.travel(now_time(time(22))):
+        assert get_scale_for_app(app) == 0
 
 
 def test_does_nothing_when_matching_schedule() -> None:

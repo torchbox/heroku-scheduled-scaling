@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 
 from heroku3.models.app import App
@@ -20,6 +21,15 @@ def get_schedule_for_app(app_config: dict[str, str], process: str) -> str | None
         return scaling_schedule
 
     return None
+
+
+def get_template_schedule(scaling_schedule: str) -> str:
+    if templated_scaling_schedule := os.environ.get(
+        "SCHEDULE_TEMPLATE_" + scaling_schedule
+    ):
+        return get_template_schedule(templated_scaling_schedule)
+
+    return scaling_schedule
 
 
 def get_scale_for_app(app: App, process: str = "web") -> int | None:
@@ -62,10 +72,17 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
             # Unset the expired schedule
             config.update({"SCALING_SCHEDULE_DISABLE": None})
 
+    # If the schedule is a template, resolve it
+    scaling_schedule = get_template_schedule(scaling_schedule)
+
     now_time = now.time()
     for schedule in parse_schedule(scaling_schedule):
         if schedule.covers(now_time):
             return schedule.scale
+
+    logger.error(
+        "Unable to parse schedule for %s (%s): %s", app.name, process, scaling_schedule
+    )
 
     return None
 
