@@ -25,7 +25,7 @@ jobs:
       - name: Install poetry
         uses: abatilo/actions-poetry@v2
         with:
-          poetry-version: 1.5.0
+          poetry-version: 1.7.1
 
       - name: Install Dependencies
         run: poetry install
@@ -57,7 +57,7 @@ jobs:
       - name: Install poetry
         uses: abatilo/actions-poetry@v2
         with:
-          poetry-version: 1.5.0
+          poetry-version: 1.7.1
 
       - name: Install Dependencies
         run: poetry install

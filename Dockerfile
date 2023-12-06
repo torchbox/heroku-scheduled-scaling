@@ -7,7 +7,7 @@ RUN useradd heroku_scheduled_scaling --create-home && mkdir /app $VIRTUAL_ENV &&
 WORKDIR /app
 
 # Install poetry at the system level
-RUN pip install --no-cache poetry==1.5.0
+RUN pip install --no-cache poetry==1.7.1
 
 USER heroku_scheduled_scaling
 
