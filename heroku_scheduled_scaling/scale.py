@@ -3,8 +3,10 @@ import os
 from datetime import datetime
 
 from heroku3.models.app import App
+from zoneinfo import ZoneInfo
 
 from .schedule import parse_schedule
+from .utils import get_zone_info, is_naive
 
 logging.basicConfig()
 logger = logging.getLogger("heroku_scheduled_scaling")
@@ -32,6 +34,21 @@ def get_template_schedule(scaling_schedule: str) -> str:
     return scaling_schedule
 
 
+def get_timezone_for_app(app_config: dict) -> ZoneInfo:
+    """
+    Get timezone from app, then from us, falling back to UTC
+    """
+    if app_timezone := get_zone_info(app_config.get("SCALING_SCHEDULE_TIMEZONE", "")):
+        return app_timezone
+
+    elif default_timezone := get_zone_info(
+        os.environ.get("SCALING_SCHEDULE_TIMEZONE", "")
+    ):
+        return default_timezone
+
+    return ZoneInfo("UTC")
+
+
 def get_scale_for_app(app: App, process: str = "web") -> int | None:
     """
     Get the expected scale for an app.
@@ -41,12 +58,13 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
     if process == "release":
         return None
 
-    now = datetime.now()
-
     config = app.config()
 
     # Also grab as dict, as `ConfigVars` doesn't implement `.get`
     config_dict = config.to_dict()
+
+    timezone = get_timezone_for_app(config_dict)
+    now = datetime.now().astimezone(timezone)
 
     if not (scaling_schedule := get_schedule_for_app(config_dict, process)):
         # No schedule
@@ -63,6 +81,10 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
         except ValueError:
             logger.exception("Unable to parse $SCALING_SCHEDULE_DISABLE")
             return None  # err on the side of caution - do nothing.
+
+        # If the disabled date is naive, assume it's in the timezone of the app
+        if is_naive(disabled_until_date):
+            disabled_until_date = disabled_until_date.replace(tzinfo=timezone)
 
         if disabled_until_date > now:
             # Still temporarily disabled

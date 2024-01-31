@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 import time_machine
 from heroku3.structures import KeyedListResource
+from zoneinfo import ZoneInfo
 
 from heroku_scheduled_scaling.scale import (
     BOOLEAN_TRUE_STRINGS,
@@ -12,9 +13,13 @@ from heroku_scheduled_scaling.scale import (
     scale_app,
 )
 
+UTC = ZoneInfo("UTC")
 
-def now_time(time_component: time) -> datetime:
-    return datetime.combine(datetime.now().date(), time_component)
+
+def now_time(time_component: time, timezone: ZoneInfo | None = UTC) -> datetime:
+    return datetime.combine(datetime.now().date(), time_component).replace(
+        tzinfo=timezone
+    )
 
 
 def test_gets_app_scale() -> None:
@@ -107,6 +112,94 @@ def test_schedule_temporarily_disabled() -> None:
     app.config.return_value.update.assert_called_with(
         {"SCALING_SCHEDULE_DISABLE": None}
     )
+
+
+def test_schedule_temporarily_disabled_naive() -> None:
+    app = MagicMock()
+
+    app.config.return_value.to_dict.return_value = {
+        "SCALING_SCHEDULE": "0900-1700:2",
+        "SCALING_SCHEDULE_DISABLE": now_time(time(12), None).isoformat(),
+    }
+
+    with time_machine.travel(now_time(time(10))):
+        assert get_scale_for_app(app) is None
+
+    app.config.return_value.update.assert_not_called()
+
+    # The block has now expired
+    with time_machine.travel(now_time(time(13))):
+        assert get_scale_for_app(app) == 2
+
+    app.config.return_value.update.assert_called_with(
+        {"SCALING_SCHEDULE_DISABLE": None}
+    )
+
+
+def test_schedule_temporarily_disabled_in_behind_timezone() -> None:
+    app = MagicMock()
+
+    timezone = ZoneInfo("America/Los_Angeles")
+
+    app.config.return_value.to_dict.return_value = {
+        "SCALING_SCHEDULE": "0000-2359:2",
+        "SCALING_SCHEDULE_DISABLE": now_time(time(9), timezone).isoformat(),
+        "SCALING_SCHEDULE_TIMEZONE": timezone.key,
+    }
+
+    with time_machine.travel(now_time(time(13))):
+        assert get_scale_for_app(app) is None
+
+    app.config.return_value.update.assert_not_called()
+
+    with time_machine.travel(now_time(time(8), timezone)):
+        assert get_scale_for_app(app) is None
+
+    app.config.return_value.update.assert_not_called()
+
+    # The block has now expired
+    with time_machine.travel(now_time(time(19))):
+        assert get_scale_for_app(app) == 2
+
+    app.config.return_value.update.assert_called_with(
+        {"SCALING_SCHEDULE_DISABLE": None}
+    )
+
+    with time_machine.travel(now_time(time(10), timezone)):
+        assert get_scale_for_app(app) == 2
+
+
+def test_schedule_temporarily_disabled_in_ahead_timezone() -> None:
+    app = MagicMock()
+
+    timezone = ZoneInfo("Australia/Perth")
+
+    app.config.return_value.to_dict.return_value = {
+        "SCALING_SCHEDULE": "0000-2359:2",
+        "SCALING_SCHEDULE_DISABLE": now_time(time(20), timezone).isoformat(),
+        "SCALING_SCHEDULE_TIMEZONE": timezone.key,
+    }
+
+    with time_machine.travel(now_time(time(10))):
+        assert get_scale_for_app(app) is None
+
+    app.config.return_value.update.assert_not_called()
+
+    with time_machine.travel(now_time(time(19), timezone)):
+        assert get_scale_for_app(app) is None
+
+    app.config.return_value.update.assert_not_called()
+
+    # The block has now expired
+    with time_machine.travel(now_time(time(14))):
+        assert get_scale_for_app(app) == 2
+
+    app.config.return_value.update.assert_called_with(
+        {"SCALING_SCHEDULE_DISABLE": None}
+    )
+
+    with time_machine.travel(now_time(time(21), timezone)):
+        assert get_scale_for_app(app) == 2
 
 
 def test_invalid_schedule() -> None:

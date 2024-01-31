@@ -40,7 +40,7 @@ This means:
 - Between 5pm and 7pm, 1 dyno will be running
 - Between 7pm and 9am, no dynos will be running (and maintenance mode will be enabled)
 
-Times are based on the time of the server (Heroku's use UTC).
+By default, times are in UTC. To override the timezone for all apps, set `$SCALING_SCHEDULE_TIMEZONE` on `heroku-scheduled-scaling`. To override the timezone per app, set `$SCALING_SCHEDULE_TIMEZONE` on the app itself. Valid values are any IANA timezone (eg `Europe/London`).
 
 To review which apps have a scaling config set, try [`heroku-audit`](https://github.com/torchbox/heroku-audit).
 
