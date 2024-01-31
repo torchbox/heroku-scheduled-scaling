@@ -44,9 +44,12 @@ Example: `0830-1800:1;0000-2359:0`:
 - Between 8:30am and 6pm, 1 dyno will be running
 - Everywhen else, no dynos will be running
 
+To review which apps have a scaling config set, try [`heroku-audit`](https://github.com/torchbox/heroku-audit).
+
+### Timezones
+
 By default, times are in UTC. To override the timezone for all apps, set `$SCALING_SCHEDULE_TIMEZONE` on `heroku-scheduled-scaling`. To override the timezone per app, set `$SCALING_SCHEDULE_TIMEZONE` on the app itself. Valid values are any IANA timezone (eg `Europe/London`).
 
-To review which apps have a scaling config set, try [`heroku-audit`](https://github.com/torchbox/heroku-audit).
 
 ### Scaling processes separately
 
@@ -56,7 +59,7 @@ By default, `SCALING_SCHEDULE` will scale all processes together. To scale a spe
 
 To disable scaling, set `$SCALING_SCHEDULE_DISABLE` to a true-looking value.
 
-Alternatively, it can be set to an ISO-8601 timestamp (eg `2023-11-29T16:15:14+00:00`). Up until this time, no scheduling changes will be made. Afterwards, the value will be automatically removed scheduling will continue. This can be useful as part of other automations.
+Alternatively, it can be set to an ISO-8601 timestamp (eg `2023-11-29T16:15:14+00:00`). Up until this time, no scheduling changes will be made. Afterwards, the value will be automatically removed scheduling will continue. This can be useful as part of other automations. If the UTC offset is omitted (eg `2023-11-29T16:15:14`), the timezone of the app will be used (see [Timezones](#timezones)).
 
 ### Scaling templates
 
