@@ -21,6 +21,7 @@ poetry run heroku-scheduled-scaling
 - `HEROKU_TEAMS`: Comma-separated list of Heroku teams to operate on. All others are ignored, regardless of whether they have a schedule.
 - `SENTRY_DSN` (optional): Sentry integration (for error reporting)
 - `SCHEDULE_TEMPLATE_*` (optional): Pre-defined scaling templates (see [below](#scaling-templates)).
+- `SCALING_SCHEDULE_TIMEZONE` (optional): Timezone for scaling schedules (see [below](#schedule)).
 
 All other configuration is handled on the app you wish to scale.
 
