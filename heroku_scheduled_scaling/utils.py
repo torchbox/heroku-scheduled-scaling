@@ -1,7 +1,9 @@
 import os
+from datetime import datetime
 from typing import Iterable
 
 import heroku3
+import zoneinfo
 from heroku3.models.app import App
 
 
@@ -25,3 +27,21 @@ def get_heroku_apps() -> list[App]:
         if heroku_teams is None
         else list(get_apps_for_teams(heroku, heroku_teams))
     )
+
+
+def get_zone_info(key: str) -> zoneinfo.ZoneInfo | None:
+    """
+    Attempt to retrive the `ZoneInfo` for a given timezone, or `None`
+    if the input is invalid / zone doesn't exisxt
+    """
+    try:
+        return zoneinfo.ZoneInfo(key)
+    except (zoneinfo.ZoneInfoNotFoundError, ValueError):
+        return None
+
+
+def is_naive(dt: datetime) -> bool:
+    """
+    Determine whether the provided datetime is naive (doesn't contain a timezone).
+    """
+    return dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None
