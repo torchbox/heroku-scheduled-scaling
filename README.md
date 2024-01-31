@@ -33,13 +33,16 @@ The schedule is read from a `$SCALING_SCHEDULE` environment variable configured 
 
 The schedule format is a simple, human-readable format, which notes time ranges alongside dyno counts. If there are gaps in the schedule, no changes will be made. If parts of the schedule overlap, the first matching rule will be used.
 
-Example: `0900-1700:2;1700-1900:1;1900-0900:0`.
-
-This means:
+Example: `0900-1700:2;1700-1900:1;1900-0900:0`:
 
 - Between 9am and 5pm, 2 dynos will be running
 - Between 5pm and 7pm, 1 dyno will be running
 - Between 7pm and 9am, no dynos will be running (and maintenance mode will be enabled)
+
+Example: `0830-1800:1;0000-2359:0`:
+
+- Between 8:30am and 6pm, 1 dyno will be running
+- Everywhen else, no dynos will be running
 
 By default, times are in UTC. To override the timezone for all apps, set `$SCALING_SCHEDULE_TIMEZONE` on `heroku-scheduled-scaling`. To override the timezone per app, set `$SCALING_SCHEDULE_TIMEZONE` on the app itself. Valid values are any IANA timezone (eg `Europe/London`).
 
