@@ -1,9 +1,8 @@
-import re
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, time
 
-SCHEDULE_RE = re.compile(r"(\d{4})-(\d{4}):(\d+?);?")
+import pyparsing
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,10 +25,34 @@ def parse_time(val: str) -> time:
     return datetime.strptime(val, "%H%M").time()
 
 
-def parse_schedule(schedule_str: str) -> list[Schedule]:
-    schedules = []
+def get_schedule_format() -> pyparsing.ParserElement:
+    """
+    Get the `pyparsing` definition for a schedule set
+    """
 
-    for match in SCHEDULE_RE.findall(schedule_str):
+    time_range = (
+        pyparsing.Word(pyparsing.nums, exact=4).setResultsName("start_time")
+        + pyparsing.Suppress("-")
+        + pyparsing.Word(pyparsing.nums, exact=4).setResultsName("end_time")
+    )
+    scale = pyparsing.Word(pyparsing.nums, exact=1).setResultsName("scale")
+    schedule_entry = pyparsing.Group(time_range + pyparsing.Suppress(":") + scale)
+
+    return pyparsing.delimitedList(schedule_entry, delim=";")
+
+
+SCHEDULE_PARSER = get_schedule_format()
+
+
+def parse_schedule(schedule_str: str) -> list[Schedule]:
+    schedules: list[Schedule] = []
+
+    try:
+        parsed_results = SCHEDULE_PARSER.parseString(schedule_str, parseAll=True)
+    except pyparsing.exceptions.ParseException:
+        return schedules
+
+    for match in parsed_results:
         with suppress(ValueError):
             schedules.append(
                 Schedule(
