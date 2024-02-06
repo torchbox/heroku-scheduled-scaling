@@ -24,4 +24,6 @@ COPY --chown=heroku_scheduled_scaling . .
 # Run poetry install again to install our project
 RUN poetry install --no-dev
 
+RUN python -m compileall -q $VIRTUAL_ENV .
+
 CMD ["/venv/bin/heroku-scheduled-scaling"]
