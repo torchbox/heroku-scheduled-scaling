@@ -31,7 +31,7 @@ All other configuration is handled on the app you wish to scale.
 
 The schedule is read from a `$SCALING_SCHEDULE` environment variable configured in each application.
 
-The schedule format is a _relatively_ simple, human-readable format, which notes time ranges alongside dyno counts. If there are gaps in the schedule, no changes will be made. If parts of the schedule overlap, the first matching rule will be used.
+The schedule format is a _relatively_ simple, human-readable format, which notes time ranges alongside dyno counts, optionally noting which day of the week they're valid for. If there are gaps in the schedule, no changes will be made. If parts of the schedule overlap, the first matching rule (left to right) will be used.
 
 Example: `0900-1700:2;1700-1900:1;1900-0900:0`:
 
@@ -49,6 +49,13 @@ Example: `0-4(0830-1800:1;0000-2359:0);5-6(1200-2359:1;0000-2359:0)`:
 - Between 8:30am and 6pm on weekdays (`0` = Monday, `4` = Friday), 1 dyno will be running
 - Between 12pm and 11:59pm on weekends, 1 dyno will be running
 - Everywhen else, no dynos will be running
+
+Example: `0(1200-1400:1);0000-2359:0`
+
+- Between 12pm and 2pm on Mondays, 1 dyno will be running
+- Everywhen else, no dynos will be running
+
+In this example, note that a range of days is optional, as is specifying them entirely (`0-6` is the default).
 
 To review which apps have a scaling config set, try [`heroku-audit`](https://github.com/torchbox/heroku-audit).
 

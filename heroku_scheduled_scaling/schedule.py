@@ -4,6 +4,9 @@ from datetime import datetime, time
 
 import pyparsing
 
+WEEKDAYS = "0123456"
+DELIMITER = ";"
+
 
 @dataclass(frozen=True, slots=True, eq=True)
 class Schedule:
@@ -37,12 +40,10 @@ def get_schedule_format() -> pyparsing.ParserElement:
     Get the `pyparsing` definition for a schedule set
     """
 
-    weekdays = "0123456"
-
-    day_range = pyparsing.Char(weekdays).setResultsName(
+    day_range = pyparsing.Char(WEEKDAYS).setResultsName(
         "start_day"
     ) + pyparsing.Optional(
-        pyparsing.Suppress("-") + pyparsing.Char(weekdays).setResultsName("end_day")
+        pyparsing.Suppress("-") + pyparsing.Char(WEEKDAYS).setResultsName("end_day")
     )
 
     time_range = (
@@ -53,22 +54,39 @@ def get_schedule_format() -> pyparsing.ParserElement:
     scale = pyparsing.Word(pyparsing.nums, exact=1).setResultsName("scale")
     schedule_entry = pyparsing.Group(time_range + pyparsing.Suppress(":") + scale)
 
-    schedules = pyparsing.delimitedList(schedule_entry, delim=";")
+    schedule_entries = pyparsing.delimitedList(
+        schedule_entry, delim=DELIMITER
+    ).setResultsName("schedule_entries")
 
-    return pyparsing.Or(
-        [
-            schedules,
-            pyparsing.delimitedList(
+    return pyparsing.delimitedList(
+        pyparsing.Or(
+            [
+                schedule_entry,
                 pyparsing.Group(
                     day_range
                     + pyparsing.Suppress("(")
-                    + schedules.setResultsName("schedule_entries")
+                    + schedule_entries
                     + pyparsing.Suppress(")")
                 ),
-                delim=";",
-            ),
-        ]
+            ]
+        ),
+        delim=DELIMITER,
     )
+
+    # return pyparsing.Or(
+    #     [
+    #         schedules,
+    #         pyparsing.delimitedList(
+    #             pyparsing.Group(
+    #                 day_range
+    #                 + pyparsing.Suppress("(")
+    #                 + schedules.setResultsName("schedule_entries")
+    #                 + pyparsing.Suppress(")")
+    #             ),
+    #             delim=";",
+    #         ),
+    #     ]
+    # )
 
 
 SCHEDULE_PARSER = get_schedule_format()

@@ -35,7 +35,12 @@ def test_parses_schedule_with_days() -> None:
 def test_mix_day_format() -> None:
     schedules = parse_schedule("0-5(0900-1700:2;1700-1900:1;1900-0900:0);0000-2359:0")
 
-    assert len(schedules) == 0
+    assert len(schedules) == 4
+
+    assert schedules[0] == Schedule(time(9), time(17), 2, 0, 5)
+    assert schedules[1] == Schedule(time(17), time(19), 1, 0, 5)
+    assert schedules[2] == Schedule(time(19), time(9), 0, 0, 5)
+    assert schedules[3] == Schedule(time(0), time(23, 59), 0, 0, 6)
 
 
 def test_single_day() -> None:
