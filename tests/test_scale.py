@@ -36,6 +36,29 @@ def test_gets_app_scale() -> None:
         assert get_scale_for_app(app) == 0
 
 
+def test_gets_app_scale_with_day_of_week() -> None:
+    app = MagicMock()
+
+    app.config.return_value.to_dict.return_value = {
+        "SCALING_SCHEDULE": "0-1(0900-1700:2;1700-1900:1;1900-0900:0);2-6(0000-2359:0)"
+    }
+
+    monday = datetime(1970, 1, 5).replace(tzinfo=UTC)
+    assert monday.weekday() == 0
+
+    with time_machine.travel(datetime.combine(monday, time(12))):
+        assert get_scale_for_app(app) == 2
+
+    with time_machine.travel(datetime.combine(monday, time(22))):
+        assert get_scale_for_app(app) == 0
+
+    # 1970-01-01 is a Thursday
+    with time_machine.travel(
+        datetime.combine(datetime(1970, 1, 1).replace(tzinfo=UTC), time(12))
+    ):
+        assert get_scale_for_app(app) == 0
+
+
 def test_gets_app_scale_for_process() -> None:
     app = MagicMock()
 

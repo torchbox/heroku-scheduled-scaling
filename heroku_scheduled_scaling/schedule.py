@@ -5,20 +5,27 @@ from datetime import datetime, time
 import pyparsing
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=True)
 class Schedule:
     start_time: time
     end_time: time
     scale: int
 
-    def covers(self, current_time: time) -> bool:
+    start_day: int = 0
+    end_day: int = 6
+
+    def covers(self, current: datetime) -> bool:
+        if self.start_day < current.weekday() > self.end_day:
+            return False
+
+        current_time = current.time()
         if self.start_time < self.end_time:
             return current_time >= self.start_time and current_time <= self.end_time
         else:  # crosses midnight
             return current_time >= self.start_time or current_time <= self.end_time
 
     def serialize(self) -> str:
-        return f"{self.start_time.strftime('%H%M')}-{self.end_time.strftime('%H%M')}:{self.scale}"
+        return f"{self.start_day}-{self.end_day}({self.start_time.strftime('%H%M')}-{self.end_time.strftime('%H%M')}:{self.scale})"
 
 
 def parse_time(val: str) -> time:
@@ -30,6 +37,14 @@ def get_schedule_format() -> pyparsing.ParserElement:
     Get the `pyparsing` definition for a schedule set
     """
 
+    weekdays = "0123456"
+
+    day_range = pyparsing.Char(weekdays).setResultsName(
+        "start_day"
+    ) + pyparsing.Optional(
+        pyparsing.Suppress("-") + pyparsing.Char(weekdays).setResultsName("end_day")
+    )
+
     time_range = (
         pyparsing.Word(pyparsing.nums, exact=4).setResultsName("start_time")
         + pyparsing.Suppress("-")
@@ -38,7 +53,22 @@ def get_schedule_format() -> pyparsing.ParserElement:
     scale = pyparsing.Word(pyparsing.nums, exact=1).setResultsName("scale")
     schedule_entry = pyparsing.Group(time_range + pyparsing.Suppress(":") + scale)
 
-    return pyparsing.delimitedList(schedule_entry, delim=";")
+    schedules = pyparsing.delimitedList(schedule_entry, delim=";")
+
+    return pyparsing.Or(
+        [
+            schedules,
+            pyparsing.delimitedList(
+                pyparsing.Group(
+                    day_range
+                    + pyparsing.Suppress("(")
+                    + schedules.setResultsName("schedule_entries")
+                    + pyparsing.Suppress(")")
+                ),
+                delim=";",
+            ),
+        ]
+    )
 
 
 SCHEDULE_PARSER = get_schedule_format()
@@ -53,13 +83,29 @@ def parse_schedule(schedule_str: str) -> list[Schedule]:
         return schedules
 
     for match in parsed_results:
-        with suppress(ValueError):
-            schedules.append(
-                Schedule(
-                    parse_time(match[0]),
-                    parse_time(match[1]),
-                    int(match[2]),
+        match = match.as_dict()
+
+        # If we have multiple
+        if schedule_entries := match.get("schedule_entries"):
+            for entry in schedule_entries:
+                with suppress(ValueError):
+                    schedules.append(
+                        Schedule(
+                            start_time=parse_time(entry["start_time"]),
+                            end_time=parse_time(entry["end_time"]),
+                            scale=int(entry["scale"]),
+                            start_day=int(match["start_day"]),
+                            end_day=int(match.get("end_day", match["start_day"])),
+                        )
+                    )
+        else:
+            with suppress(ValueError):
+                schedules.append(
+                    Schedule(
+                        start_time=parse_time(match["start_time"]),
+                        end_time=parse_time(match["end_time"]),
+                        scale=int(match["scale"]),
+                    )
                 )
-            )
 
     return schedules

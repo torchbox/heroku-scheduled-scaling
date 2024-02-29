@@ -97,9 +97,8 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
     # If the schedule is a template, resolve it
     scaling_schedule = get_template_schedule(scaling_schedule)
 
-    now_time = now.time()
     for schedule in parse_schedule(scaling_schedule):
-        if schedule.covers(now_time):
+        if schedule.covers(now):
             return schedule.scale
 
     logger.error(
