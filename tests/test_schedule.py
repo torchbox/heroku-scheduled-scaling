@@ -63,6 +63,27 @@ def test_parses_single_schedule() -> None:
     assert schedules[0].serialize() == "0-6(0900-1700:3)"
 
 
+@given(
+    strategies.times(),
+    strategies.times(),
+    strategies.integers(min_value=0),
+    strategies.integers(min_value=0, max_value=6),
+    strategies.integers(min_value=0, max_value=6),
+)
+def test_e2e_parse(
+    start_time: time, end_time: time, scale: int, start_day: int, end_day: int
+) -> None:
+    schedule = Schedule(
+        start_time.replace(second=0, microsecond=0),
+        end_time.replace(second=0, microsecond=0),
+        scale,
+        start_day,
+        end_day,
+    )
+
+    assert parse_schedule(schedule.serialize()) == [schedule]
+
+
 def test_parses_all_day_schedule() -> None:
     schedules = parse_schedule("0000-2359:3")
 
@@ -111,7 +132,7 @@ def test_covers_crossing_midnight() -> None:
 
 @given(strategies.text(min_size=3, max_size=15))
 def test_invalid_schedule(schedule_candidate: str) -> None:
-    parse_schedule(schedule_candidate)
+    assert len(parse_schedule(schedule_candidate)) == 0
 
 
 @given(strategies.text(alphabet=string.digits))

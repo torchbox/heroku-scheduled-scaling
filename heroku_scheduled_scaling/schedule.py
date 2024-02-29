@@ -51,7 +51,7 @@ def get_schedule_format() -> pyparsing.ParserElement:
         + pyparsing.Suppress("-")
         + pyparsing.Word(pyparsing.nums, exact=4).setResultsName("end_time")
     )
-    scale = pyparsing.Word(pyparsing.nums, exact=1).setResultsName("scale")
+    scale = pyparsing.Word(pyparsing.nums).setResultsName("scale")
     schedule_entry = pyparsing.Group(time_range + pyparsing.Suppress(":") + scale)
 
     schedule_entries = pyparsing.delimitedList(
@@ -72,21 +72,6 @@ def get_schedule_format() -> pyparsing.ParserElement:
         ),
         delim=DELIMITER,
     )
-
-    # return pyparsing.Or(
-    #     [
-    #         schedules,
-    #         pyparsing.delimitedList(
-    #             pyparsing.Group(
-    #                 day_range
-    #                 + pyparsing.Suppress("(")
-    #                 + schedules.setResultsName("schedule_entries")
-    #                 + pyparsing.Suppress(")")
-    #             ),
-    #             delim=";",
-    #         ),
-    #     ]
-    # )
 
 
 SCHEDULE_PARSER = get_schedule_format()
