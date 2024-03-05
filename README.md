@@ -4,27 +4,6 @@
 
 Scale Heroku dynos based on a schedule.
 
-## Deployment
-
-The easiest deployment for this is within Heroku. Deploy the repository to Heroku (using the "container" runtime), stop the web dyno, and use Heroku Scheduler to run `heroku-scheduled-scaling` every 10 minutes (or less frequently if you prefer).
-
-To install manually (requires [Poetry](https://python-poetry.org/)):
-
-```
-poetry install
-poetry run heroku-scheduled-scaling
-```
-
-### Configuration
-
-- `HEROKU_API_KEY`: Heroku API key - used for authentication. The corresponding user must have the ability to scale and read environment variables for apps.
-- `HEROKU_TEAMS`: Comma-separated list of Heroku teams to operate on. All others are ignored, regardless of whether they have a schedule.
-- `SENTRY_DSN` (optional): Sentry integration (for error reporting)
-- `SCHEDULE_TEMPLATE_*` (optional): Pre-defined scaling templates (see [below](#scaling-templates)).
-- `SCALING_SCHEDULE_TIMEZONE` (optional): Timezone for scaling schedules (see [below](#schedule)).
-
-All other configuration is handled on the app you wish to scale.
-
 ## Usage
 
 ### Schedule
@@ -89,3 +68,24 @@ And then reuse it on the given app:
 ```
 SCALING_SCHEDULE=OFFICE_HOURS
 ```
+
+## Deployment
+
+The easiest deployment for this is within Heroku. Deploy the repository to Heroku (using the "container" runtime), stop the web dyno, and use Heroku Scheduler to run `heroku-scheduled-scaling` every 10 minutes (or less frequently if you prefer).
+
+To install manually (requires [Poetry](https://python-poetry.org/)):
+
+```
+poetry install
+poetry run heroku-scheduled-scaling
+```
+
+### Configuration
+
+- `HEROKU_API_KEY`: Heroku API key - used for authentication. The corresponding user must have the ability to scale and read environment variables for apps.
+- `HEROKU_TEAMS`: Comma-separated list of Heroku teams to operate on. All others are ignored, regardless of whether they have a schedule.
+- `SENTRY_DSN` (optional): Sentry integration (for error reporting)
+- `SCHEDULE_TEMPLATE_*` (optional): Pre-defined scaling templates (see [below](#scaling-templates)).
+- `SCALING_SCHEDULE_TIMEZONE` (optional): Timezone for scaling schedules (see [below](#schedule)).
+
+All other configuration is handled on the app you wish to scale.
