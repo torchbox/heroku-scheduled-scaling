@@ -87,5 +87,6 @@ poetry run heroku-scheduled-scaling
 - `SENTRY_DSN` (optional): Sentry integration (for error reporting)
 - `SCHEDULE_TEMPLATE_*` (optional): Pre-defined scaling templates (see [below](#scaling-templates)).
 - `SCALING_SCHEDULE_TIMEZONE` (optional): Timezone for scaling schedules (see [below](#schedule)).
+- `CONCURRENCY` (optional): How many apps to process at once (default: 10, max: 10). Too high values may result in [rate limiting](https://devcenter.heroku.com/articles/platform-api-reference#rate-limits).
 
 All other configuration is handled on the app you wish to scale.

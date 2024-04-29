@@ -19,7 +19,9 @@ def main() -> None:
     )
 
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=requests_pool_size
+        max_workers=min(
+            int(os.environ.get("CONCURRENCY", requests_pool_size)), requests_pool_size
+        )
     ) as executor:
         futures = []
         for app in apps:
