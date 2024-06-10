@@ -102,7 +102,10 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
             return schedule.scale
 
     logger.error(
-        "Unable to parse schedule for %s (%s): %s", app.name, process, scaling_schedule
+        "Unable to apply schedule for %s (%s): %s. Does it define a schedule for the current time?",
+        app.name,
+        process,
+        scaling_schedule,
     )
 
     return None
