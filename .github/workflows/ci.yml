@@ -15,17 +15,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-3.12-${{ hashFiles('poetry.lock') }}
+          key: pip-3.13-${{ hashFiles('poetry.lock') }}
 
       - name: Install poetry
         uses: abatilo/actions-poetry@v4
         with:
-          poetry-version: 1.7.1
+          poetry-version: 2.1.1
 
       - name: Install Dependencies
         run: poetry install
@@ -47,17 +47,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-3.12-${{ hashFiles('poetry.lock') }}
+          key: pip-3.13-${{ hashFiles('poetry.lock') }}
 
       - name: Install poetry
         uses: abatilo/actions-poetry@v4
         with:
-          poetry-version: 1.7.1
+          poetry-version: 2.1.1
 
       - name: Install Dependencies
         run: poetry install

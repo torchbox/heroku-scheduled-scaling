@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 ENV VIRTUAL_ENV=/venv
 
@@ -7,7 +7,7 @@ RUN useradd heroku_scheduled_scaling --create-home && mkdir /app $VIRTUAL_ENV &&
 WORKDIR /app
 
 # Install poetry at the system level
-RUN pip install --no-cache poetry==1.7.1
+RUN pip install --no-cache poetry==2.1.1
 
 USER heroku_scheduled_scaling
 
@@ -21,7 +21,6 @@ RUN pip install --no-cache --upgrade pip && poetry install --no-dev --no-root &&
 
 COPY --chown=heroku_scheduled_scaling . .
 
-# Run poetry install again to install our project
 RUN poetry install --no-dev
 
 RUN python -m compileall -q $VIRTUAL_ENV .

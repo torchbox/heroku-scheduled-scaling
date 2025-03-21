@@ -6,7 +6,7 @@ authors = []
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.13"
 heroku3 = "^5.2.1"
 sentry-sdk = "^1.37.1"
 pyparsing = "^3.1.1"
