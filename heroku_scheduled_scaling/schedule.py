@@ -1,4 +1,3 @@
-from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, time
 
@@ -91,7 +90,7 @@ def parse_schedule(schedule_str: str) -> list[Schedule]:
         # If we have multiple
         if schedule_entries := match.get("schedule_entries"):
             for entry in schedule_entries:
-                with suppress(ValueError):
+                try:
                     schedules.append(
                         Schedule(
                             start_time=parse_time(entry["start_time"]),
@@ -101,8 +100,10 @@ def parse_schedule(schedule_str: str) -> list[Schedule]:
                             end_day=int(match.get("end_day", match["start_day"])),
                         )
                     )
+                except ValueError:
+                    pass
         else:
-            with suppress(ValueError):
+            try:
                 schedules.append(
                     Schedule(
                         start_time=parse_time(match["start_time"]),
@@ -110,5 +111,7 @@ def parse_schedule(schedule_str: str) -> list[Schedule]:
                         scale=int(match["scale"]),
                     )
                 )
+            except ValueError:
+                pass
 
     return schedules
