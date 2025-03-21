@@ -15,7 +15,7 @@ def main() -> None:
     apps = get_heroku_apps()
 
     requests_pool_size = (
-        get_heroku_client()._session.adapters["https://"]._pool_connections
+        get_heroku_client()._session.adapters["https://"]._pool_connections  # type: ignore[attr-defined]
     )
 
     with concurrent.futures.ThreadPoolExecutor(
