@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, time
+from functools import cache
 
 import pyparsing
 
@@ -76,6 +77,7 @@ def get_schedule_format() -> pyparsing.ParserElement:
 SCHEDULE_PARSER = get_schedule_format()
 
 
+@cache
 def parse_schedule(schedule_str: str) -> list[Schedule]:
     schedules: list[Schedule] = []
 
