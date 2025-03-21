@@ -17,10 +17,10 @@ ENV PATH=$VIRTUAL_ENV/bin:$PATH
 
 COPY --chown=heroku_scheduled_scaling pyproject.toml poetry.lock ./
 
-RUN pip install --no-cache --upgrade pip && poetry install --no-dev --no-root && rm -rf $HOME/.cache
+RUN pip install --no-cache --upgrade pip && poetry install --without=dev --no-root --compile && rm -rf $HOME/.cache
 
 COPY --chown=heroku_scheduled_scaling . .
 
-RUN poetry install --no-dev
+RUN poetry install --without=dev --compile
 
 CMD ["/venv/bin/heroku-scheduled-scaling"]
