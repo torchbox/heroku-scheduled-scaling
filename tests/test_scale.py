@@ -1,11 +1,11 @@
 from datetime import datetime, time
 from typing import Any
 from unittest.mock import MagicMock
+from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
 from heroku3.structures import KeyedListResource
-from zoneinfo import ZoneInfo
 
 from heroku_scheduled_scaling.scale import (
     BOOLEAN_TRUE_STRINGS,

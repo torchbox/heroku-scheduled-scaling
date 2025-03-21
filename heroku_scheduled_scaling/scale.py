@@ -1,9 +1,9 @@
 import logging
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from heroku3.models.app import App
-from zoneinfo import ZoneInfo
 
 from .schedule import parse_schedule
 from .utils import get_zone_info, is_naive
