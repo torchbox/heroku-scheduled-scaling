@@ -5,7 +5,7 @@ from traceback import print_exception
 import sentry_sdk
 
 from .scale import scale_app
-from .utils import get_heroku_apps, get_heroku_client
+from .utils import get_heroku_apps, requests_session
 
 
 def main() -> None:
@@ -15,7 +15,7 @@ def main() -> None:
     apps = get_heroku_apps()
 
     requests_pool_size = (
-        get_heroku_client()._session.adapters["https://"]._pool_connections  # type: ignore[attr-defined]
+        requests_session.adapters["https://"]._pool_connections  # type: ignore[attr-defined]
     )
 
     with concurrent.futures.ThreadPoolExecutor(

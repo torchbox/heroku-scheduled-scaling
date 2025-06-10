@@ -4,7 +4,18 @@ from datetime import datetime
 from typing import Iterable
 
 import heroku3
+import requests
+import requests.adapters
 from heroku3.models.app import App
+
+requests_retry = requests.adapters.Retry(total=3, backoff_factor=0.1)
+requests_session = requests.Session()
+requests_session.mount(
+    "https://", requests.adapters.HTTPAdapter(max_retries=requests_retry)
+)
+requests_session.mount(
+    "http://", requests.adapters.HTTPAdapter(max_retries=requests_retry)
+)
 
 
 def get_apps_for_teams(heroku: heroku3.core.Heroku, teams: list[str]) -> Iterable[App]:
@@ -15,7 +26,7 @@ def get_apps_for_teams(heroku: heroku3.core.Heroku, teams: list[str]) -> Iterabl
 
 
 def get_heroku_client() -> heroku3.core.Heroku:
-    return heroku3.from_key(os.environ["HEROKU_API_KEY"])
+    return heroku3.from_key(os.environ["HEROKU_API_KEY"], session=requests_session)
 
 
 def get_heroku_apps() -> list[App]:
