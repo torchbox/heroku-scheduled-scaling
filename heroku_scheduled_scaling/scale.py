@@ -3,10 +3,18 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from heroku3.models.app import App
+from aiohttp import ClientSession
 
 from .schedule import parse_schedule
-from .utils import get_zone_info, is_naive
+from .utils import (
+    batch_scale_formation,
+    get_app_config,
+    get_app_formation,
+    get_zone_info,
+    is_naive,
+    set_app_maintenance,
+    update_app_config,
+)
 
 logging.basicConfig()
 logger = logging.getLogger("heroku_scheduled_scaling")
@@ -49,7 +57,9 @@ def get_timezone_for_app(app_config: dict) -> ZoneInfo:
     return ZoneInfo("UTC")
 
 
-def get_scale_for_app(app: App, process: str = "web") -> int | None:
+async def get_scale_for_app(
+    client: ClientSession, app: dict, process: str = "web"
+) -> int | None:
     """
     Get the expected scale for an app.
 
@@ -58,19 +68,16 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
     if process == "release":
         return None
 
-    config = app.config()
+    config = await get_app_config(client, app["name"])
 
-    # Also grab as dict, as `ConfigVars` doesn't implement `.get`
-    config_dict = config.to_dict()
-
-    timezone = get_timezone_for_app(config_dict)
+    timezone = get_timezone_for_app(config)
     now = datetime.now().astimezone(timezone)
 
-    if not (scaling_schedule := get_schedule_for_app(config_dict, process)):
+    if not (scaling_schedule := get_schedule_for_app(config, process)):
         # No schedule
         return None
 
-    scaling_disabled = config_dict.get("SCALING_SCHEDULE_DISABLE", "")
+    scaling_disabled = config.get("SCALING_SCHEDULE_DISABLE", "")
     if scaling_disabled:
         if scaling_disabled.lower() in BOOLEAN_TRUE_STRINGS:
             # Scheduling temporarily disabled - don't do anything
@@ -92,7 +99,9 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
 
         if disabled_until_date <= now:
             # Unset the expired schedule
-            config.update({"SCALING_SCHEDULE_DISABLE": None})
+            await update_app_config(
+                client, app["name"], {"SCALING_SCHEDULE_DISABLE": None}
+            )
 
     # If the schedule is a template, resolve it
     scaling_schedule = get_template_schedule(scaling_schedule)
@@ -103,7 +112,7 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
 
     logger.error(
         "Unable to apply schedule for %s (%s): %s. Does it define a schedule for the current time?",
-        app.name,
+        app["name"],
         process,
         scaling_schedule,
     )
@@ -111,37 +120,38 @@ def get_scale_for_app(app: App, process: str = "web") -> int | None:
     return None
 
 
-def scale_app(app: App) -> None:
-    formations = app.process_formation()
+async def scale_app(client: ClientSession, app: dict) -> None:
+    formations = await get_app_formation(client, app["name"])
 
     process_scales = {
-        formation.type: scale
-        for formation in formations
-        if (scale := get_scale_for_app(app, formation.type)) is not None
+        formation["type"]: scale
+        for formation in formations.values()
+        if (scale := await get_scale_for_app(client, app, formation["type"]))
+        is not None
     }
 
     if not process_scales:
         return
 
     for process, scale in process_scales.items():
-        if formations[process].quantity != scale:
+        if formations[process]["quantity"] != scale:
             logger.info(
                 "Scaling app %s (%s) to %d dynos (from %d)",
-                app.name,
+                app["name"],
                 process,
                 scale,
-                formations[process].quantity,
+                formations[process]["quantity"],
             )
 
-    app.batch_scale_formation_processes(process_scales)
+    await batch_scale_formation(client, app["name"], process_scales)
 
     if (web_scale := process_scales.get("web")) is not None:
         # For a better experience, enable maintenance mode for apps scaled to 0
-        if web_scale == 0 and not app.maintenance:
-            logger.info("Enabling maintenance mode for %s", app.name)
-            app.enable_maintenance_mode()
-        elif web_scale and app.maintenance:
+        if web_scale == 0 and not app["maintenance"]:
+            logger.info("Enabling maintenance mode for %s", app["name"])
+            await set_app_maintenance(client, app["name"], True)
+        elif web_scale and app["maintenance"]:
             # NOTE: This can result in maintenance mode being disabled unexpectedly, but
             # this will only happen on scaling boundaries.
-            logger.info("Disabling maintenance mode for %s", app.name)
-            app.disable_maintenance_mode()
+            logger.info("Disabling maintenance mode for %s", app["name"])
+            await set_app_maintenance(client, app["name"], False)

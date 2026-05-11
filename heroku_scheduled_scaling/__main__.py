@@ -1,37 +1,37 @@
-import concurrent.futures
+import asyncio
 import os
 from traceback import print_exception
 
+import aiohttp
 import sentry_sdk
 
 from .scale import scale_app
-from .utils import get_heroku_apps, requests_session
+from .utils import get_heroku_apps
 
 
-def main() -> None:
+async def main() -> None:
     if sentry_dsn := os.environ.get("SENTRY_DSN"):
         sentry_sdk.init(sentry_dsn)
 
-    apps = get_heroku_apps()
-
-    requests_pool_size = (
-        requests_session.adapters["https://"]._pool_connections  # type: ignore[attr-defined]
+    client = aiohttp.ClientSession(
+        connector=aiohttp.TCPConnector(limit=5),
+        base_url="https://api.heroku.com/",
+        auth=aiohttp.BasicAuth("", os.environ["HEROKU_API_KEY"]),
+        headers={"Accept": "application/vnd.heroku+json; version=3"},
     )
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=min(
-            int(os.environ.get("CONCURRENCY", requests_pool_size)), requests_pool_size
-        )
-    ) as executor:
-        futures = []
-        for app in apps:
-            futures.append(executor.submit(scale_app, app))
+    apps = await get_heroku_apps(client)
 
-        for future in concurrent.futures.as_completed(futures):
-            if exception := future.exception():
-                sentry_sdk.capture_exception(exception)
-                print_exception(exception)
+    tasks = []
+    async with asyncio.TaskGroup() as tg:
+        for app in apps:
+            tasks.append(tg.create_task(scale_app(client, app)))
+
+    for task in tasks:
+        if exception := task.exception():
+            sentry_sdk.capture_exception(exception)
+            print_exception(exception)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

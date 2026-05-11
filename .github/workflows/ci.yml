@@ -31,13 +31,13 @@ jobs:
         run: poetry install
 
       - name: ruff format
-        run: poetry run ruff format --check heroku_scheduled_scaling tests stubs
+        run: poetry run ruff format --check heroku_scheduled_scaling tests
 
       - name: mypy
-        run: poetry run mypy heroku_scheduled_scaling tests stubs
+        run: poetry run mypy heroku_scheduled_scaling tests
 
       - name: ruff check
-        run: poetry run ruff check heroku_scheduled_scaling tests stubs
+        run: poetry run ruff check heroku_scheduled_scaling tests
 
   test:
     runs-on: ubuntu-latest
