@@ -7,9 +7,9 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.13"
-heroku3 = "^5.2.1"
 sentry-sdk = "^2.23.1"
 pyparsing = "^3.2.1"
+aiohttp = "^3.13.5"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -32,7 +32,6 @@ select = ["E", "F", "I", "W", "N", "B", "A", "C4", "T20"]
 ignore = ["E501"]
 
 [tool.mypy]
-mypy_path = "stubs"
 warn_unused_ignores = true
 warn_return_any = true
 show_error_codes = true

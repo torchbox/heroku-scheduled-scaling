@@ -1,43 +1,37 @@
 import os
 import zoneinfo
 from datetime import datetime
-from typing import Iterable
 
-import heroku3
-import requests
-import requests.adapters
-from heroku3.models.app import App
-
-requests_retry = requests.adapters.Retry(total=3, backoff_factor=0.1)
-requests_session = requests.Session()
-requests_session.mount(
-    "https://", requests.adapters.HTTPAdapter(max_retries=requests_retry)
-)
-requests_session.mount(
-    "http://", requests.adapters.HTTPAdapter(max_retries=requests_retry)
-)
+from aiohttp import ClientSession
 
 
-def get_apps_for_teams(heroku: heroku3.core.Heroku, teams: list[str]) -> Iterable[App]:
+async def get_apps_for_teams(client: ClientSession, teams: list[str]) -> list[dict]:
+    apps = []
     for team in teams:
-        yield from heroku._get_resources(  # type:ignore[attr-defined]
-            ("teams", team, "apps"), App
-        )
+        response = await client.get(f"teams/{team}/apps")
+        response.raise_for_status()
+        apps.extend(await response.json())
+    return apps
 
 
-def get_heroku_client() -> heroku3.core.Heroku:
-    return heroku3.from_key(os.environ["HEROKU_API_KEY"], session=requests_session)
+async def get_heroku_apps(client: ClientSession) -> list[dict]:
+    if heroku_teams := os.environ.get("HEROKU_TEAMS", "").split(","):
+        return await get_apps_for_teams(client, heroku_teams)
+    else:
+        # NB: Pagination isn't currently handled, but the default page size is 200.
+        response = await client.get("apps")
+
+        response.raise_for_status()
+
+        return await response.json()  # type: ignore[no-any-return]
 
 
-def get_heroku_apps() -> list[App]:
-    heroku = get_heroku_client()
+async def get_app_formation(client: ClientSession, app_name: str) -> dict[str, dict]:
+    response = await client.get(f"apps/{app_name}/formation")
 
-    heroku_teams = os.environ.get("HEROKU_TEAMS", "").split(",")
-    return (
-        heroku.apps()
-        if heroku_teams is None
-        else list(get_apps_for_teams(heroku, heroku_teams))
-    )
+    response.raise_for_status()
+
+    return {f["type"]: f for f in await response.json()}
 
 
 def get_zone_info(key: str) -> zoneinfo.ZoneInfo | None:
@@ -56,3 +50,41 @@ def is_naive(dt: datetime) -> bool:
     Determine whether the provided datetime is naive (doesn't contain a timezone).
     """
     return dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None
+
+
+async def get_app_config(client: ClientSession, app_name: str) -> dict:
+    response = await client.get(f"apps/{app_name}/config-vars")
+
+    response.raise_for_status()
+
+    return await response.json()  # type: ignore[no-any-return]
+
+
+async def update_app_config(
+    client: ClientSession, app_name: str, new_config: dict
+) -> None:
+    response = await client.patch(
+        f"apps/{app_name}/config-vars",
+        json=new_config,
+    )
+
+    response.raise_for_status()
+
+
+async def batch_scale_formation(
+    client: ClientSession, app_name: str, formation: dict[str, int]
+) -> None:
+    updates = [{"type": k, "quantity": v} for k, v in formation.items()]
+    response = await client.patch(
+        f"apps/{app_name}/formation", json={"updates": updates}
+    )
+
+    response.raise_for_status()
+
+
+async def set_app_maintenance(
+    client: ClientSession, app_name: str, maintenance: bool
+) -> None:
+    response = await client.patch(f"apps/{app_name}", json={"maintenance": maintenance})
+
+    response.raise_for_status()
